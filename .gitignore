@@ -3,10 +3,5 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
-.vs/MedorAssignment/FileContentIndex/1a643f38-775e-44fa-abed-8a32814d6c05.vsidx
-.idea/.idea.MedorAssignment/.idea/workspace.xml
-.vs/MedorAssignment/FileContentIndex/22b240d1-4b3e-4ad6-bd1a-b7e5e893edc3.vsidx
-.vs/MedorAssignment/FileContentIndex/453f25ea-46b5-4ae9-8aed-9b534fdc6de7.vsidx
-.vs/MedorAssignment/v17/.suo
-.vs/MedorAssignment/v17/.suo
-.idea/.idea.MedorAssignment/.idea/workspace.xml
+.idea/
+.vs/
