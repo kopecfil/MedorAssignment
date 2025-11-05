@@ -59,8 +59,15 @@ namespace WebApp.Services
                 CurrentHourOpen = tick.Value<decimal?>("CURRENT_HOUR_OPEN") ?? 0m,
                 CurrentHourHigh = tick.Value<decimal?>("CURRENT_HOUR_HIGH") ?? 0m,
                 CurrentHourLow = tick.Value<decimal?>("CURRENT_HOUR_LOW") ?? 0m,
-                PriceCzk = eurToCzk * tick.Value<decimal>("PRICE") // <— compute CZK
+                PriceCzk = eurToCzk * tick.Value<decimal>("PRICE")
             };
+            // todo this seems unnecessarily ugly tho it doesn't actually matter, this code is as simple as it can get
+            dto.BestBidCzk = eurToCzk * dto.BestBid;
+            dto.BestAskCzk = eurToCzk * dto.BestAsk;
+            dto.CurrentHourOpenCzk = eurToCzk * dto.CurrentHourOpen;
+            dto.CurrentHourHighCzk = eurToCzk * dto.CurrentHourHigh;
+            dto.CurrentHourLowCzk = eurToCzk * dto.CurrentHourLow;
+
 
             return dto;
         }
