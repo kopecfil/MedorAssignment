@@ -1,0 +1,19 @@
+﻿
+coinbase api
+    It appears that the coinbase api caches the data on their side.
+    It seems like it is only possible to get new data after 10 s since the last response.
+    Therefore automatic fetching of the data should have a similar timer, but it should also be configurable in some way.
+
+testing
+    this codebase is very simple, there are a few things that could be unit-tested
+    but a lot of the functionality needs integration tests, which makes it pointless to also write unit tests because the integration tests would cover all of the code
+    setting up integration tests would take too much effort for this assignment
+    the database would need to be tested, which would be a pain even tho the database is extremely simple here
+    I guess one way around the pain is to decide that all changes to the DB have to be treated like special events and not handled automatically
+    that would mean that doing integration tests for the DB would be easier on this assignment, but that would not happen in a real codebase, so there is no point in even doing that here
+
+project template
+    it seems like the template for this type of project now contains more files than I am used to
+    I am pretty sure that I could remove most of these in order to reduce the clutter and bloat in the codebase
+    because this is a new thing and I am not familiar with what all of the files are, I'm not going to remove any of them as of now in order to make sure that I wouldn't remove some that are important, tho I think they were never important, it's just that the defaul website links to the other ones and I'm not using any of that
+    I might go through it and clean it up before submitting the assignment

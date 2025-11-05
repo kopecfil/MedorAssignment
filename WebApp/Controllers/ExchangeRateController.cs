@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using WebApp.Dtos;
 using WebApp.Services;
 
 namespace WebApp.Controllers
@@ -11,26 +12,20 @@ namespace WebApp.Controllers
 	[RoutePrefix("api/exchangeRates")]
 	public sealed class ExchangeRateController : ApiController
 	{
-		// single service instance; small, easy to step through
 		private static readonly ExchangeRateService _service = new ExchangeRateService();
-		
+
 		// GET /api/exchangeRates/coindesk/btceur
 		[HttpGet, Route("coindesk/btceur")]
-		public async Task<HttpResponseMessage> GetBtcEurExchangeRateAsync()
+		public async Task<IHttpActionResult> GetBtcEurExchangeRateAsync()
 		{
 			try
 			{
-				string json = await _service.GetLatestRawJsonAsync(CancellationToken.None);
-
-				return new HttpResponseMessage(HttpStatusCode.OK)
-				{
-					Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
-				};
+				BtcEurTickDto dto = await _service.GetLatestParsedAsync(CancellationToken.None);
+				return Ok(dto);
 			}
-			catch (Exception ex)
+			catch(Exception ex)
 			{
-				// keep it simple for now; we can switch to ProblemDetails later
-				return Request.CreateErrorResponse(HttpStatusCode.BadGateway, ex);
+				return ResponseMessage(Request.CreateErrorResponse(HttpStatusCode.InternalServerError, ex));
 			}
 		}
 	}

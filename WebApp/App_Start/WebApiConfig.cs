@@ -1,4 +1,5 @@
 ﻿using System.Web.Http;
+using Newtonsoft.Json.Serialization;
 
 public static class WebApiConfig
 {
@@ -11,5 +12,8 @@ public static class WebApiConfig
 			routeTemplate: "api/{controller}/{id}",
 			defaults: new { id = RouteParameter.Optional }
 		);
+		
+		config.Formatters.JsonFormatter.SerializerSettings.ContractResolver =
+			new CamelCasePropertyNamesContractResolver();
 	}
 }
