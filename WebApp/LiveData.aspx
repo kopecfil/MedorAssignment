@@ -14,7 +14,7 @@
 <form id="form1" runat="server">
     <h2>Live data (BTC-EUR)</h2>
   <div class="controls">
-    <button type="button" onclick="saveAllPlaceholder()">Uložit data</button>
+    <button type="button" onclick="saveAll()">Uložit data</button>
     <span style="margin-left:10px">Řádků: <span id="count">0</span></span>
     <span style="margin-left:10px">Stav: <span id="status">idle</span></span>
   </div>
@@ -150,8 +150,38 @@
     timerHandle = setInterval(fetchLiveOnce, 5000);
   }
 
-  function saveAllPlaceholder() {
-    alert('Řádků v paměti: ' + rows.length + '\n(Další krok: POST /api/exchangeRates/snapshots/bulk)');
+  async function saveAll() {
+    try {
+      const payload = {
+        items: rows.map(r => ({
+          timestampUtc: r.priceLastUpdateUtc, // ISO string is fine; Web API will parse to DateTime (UTC)
+          priceCzk: r.priceCzk,
+          bestBidCzk: r.bestBidCzk,
+          bestAskCzk: r.bestAskCzk,
+          market: r.market || "coinbase",
+          instrument: r.instrument || "BTC-EUR"
+        }))
+      };
+
+      const res = await fetch(baseUrl + '/api/exchangeRates/snapshots/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        setStatus('chyba ukládání: ' + txt);
+        return;
+      }
+
+      const j = await res.json();
+      setStatus('uloženo: ' + j.inserted);
+      // per your requirement: keep page running, do NOT clear rows or stop polling
+    } catch (e) {
+      setStatus('chyba ukládání: ' + (e?.message ?? e));
+      console.error(e);
+    }
   }
 
   window.addEventListener('DOMContentLoaded', startPolling);

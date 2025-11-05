@@ -28,5 +28,27 @@ namespace WebApp.Controllers
 				return ResponseMessage(Request.CreateErrorResponse(HttpStatusCode.InternalServerError, ex));
 			}
 		}
+		
+		// POST /api/exchangeRates/snapshots/bulk
+		[HttpPost, Route("snapshots/bulk")]
+		public async Task<IHttpActionResult> SaveSnapshotsBulk([FromBody] SaveSnapshotsRequest request)
+		{
+			if (request?.Items == null || request.Items.Length == 0)
+				return BadRequest("Items is required and must contain at least one item.");
+
+			try
+			{
+				var ids = await _service.SaveSnapshotsAsync(request.Items);
+				return Ok(new { inserted = ids.Length, ids });
+			}
+			catch (ArgumentException ex)
+			{
+				return BadRequest(ex.Message);
+			}
+			catch (Exception ex)
+			{
+				return InternalServerError(ex);
+			}
+		}
 	}
 }

@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using WebApp.Data;
 using WebApp.Dtos;
 
 namespace WebApp.Services
@@ -108,6 +111,42 @@ namespace WebApp.Services
                 resp.EnsureSuccessStatusCode();
                 var text = await resp.Content.ReadAsStringAsync();
                 return ParseCnbRate(text, "EUR");
+            }
+        }
+        
+        public async Task<int[]> SaveSnapshotsAsync(IEnumerable<WebApp.Dtos.SaveSnapshotItemDto> items)
+        {
+            if (items == null) throw new ArgumentNullException(nameof(items));
+
+            var nowUtc = DateTime.UtcNow;
+            using (var db = new ExchangeRatesDbContext())
+            {
+                var entities = new List<ExchangeRateEntry>();
+
+                foreach (var i in items)
+                {
+                    // basic validation
+                    if (i.TimestampUtc == default) throw new ArgumentException("TimestampUtc is required.");
+                    // Price/Bid/Ask can be 0m but not NaN; numbers from JSON come as decimals fine.
+
+                    entities.Add(new ExchangeRateEntry
+                    {
+                        TimestampUtc = i.TimestampUtc,
+                        PriceCzk = i.PriceCzk,
+                        BestBidCzk = i.BestBidCzk,
+                        BestAskCzk = i.BestAskCzk,
+                        Market = string.IsNullOrWhiteSpace(i.Market) ? "coinbase" : i.Market,
+                        Instrument = string.IsNullOrWhiteSpace(i.Instrument) ? "BTC-EUR" : i.Instrument,
+                        UserNote = null,
+                        CreatedAtUtc = nowUtc,
+                        UpdatedAtUtc = nowUtc
+                    });
+                }
+
+                db.ExchangeRateEntries.AddRange(entities);
+                await db.SaveChangesAsync();
+
+                return entities.Select(e => e.ExchangeRateEntryId).ToArray();
             }
         }
 
