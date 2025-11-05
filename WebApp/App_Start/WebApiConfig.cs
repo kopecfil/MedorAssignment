@@ -13,6 +13,9 @@ public static class WebApiConfig
 			defaults: new { id = RouteParameter.Optional }
 		);
 		
+		// Prefer JSON over XML for browsers
+		config.Formatters.Remove(config.Formatters.XmlFormatter);
+		
 		config.Formatters.JsonFormatter.SerializerSettings.ContractResolver =
 			new CamelCasePropertyNamesContractResolver();
 	}

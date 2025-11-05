@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Web.Http;
 using System.Net;
 using System.Net.Http;
@@ -48,6 +49,20 @@ namespace WebApp.Controllers
 			catch (Exception ex)
 			{
 				return InternalServerError(ex);
+			}
+		}
+		
+		// GET /api/exchangeRates/snapshots/all
+		[HttpGet, Route("snapshots/all")]
+		public IHttpActionResult GetAllSnapshots()
+		{
+			using (var db = new WebApp.Data.ExchangeRatesDbContext())
+			{
+				var rows = db.ExchangeRateEntries
+					.OrderBy(x => x.TimestampUtc)   // oldest -> newest
+					.ToList();
+
+				return Ok(rows);
 			}
 		}
 	}
