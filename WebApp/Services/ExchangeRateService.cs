@@ -15,8 +15,8 @@ namespace WebApp.Services
             Timeout = TimeSpan.FromSeconds(10)
         };
 
-        private const string BtcEurUrl =
-            "https://data-api.coindesk.com/spot/v1/latest/tick?market=coinbase&instruments=BTC-EUR";
+        private const string BtcEurUrl = "https://data-api.coindesk.com/spot/v1/latest/tick?market=coinbase&instruments=BTC-EUR";
+        private const string CnbDailyUrl = "https://www.cnb.cz/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt";
 
         private static DateTime FromUnixSecondsToUtc(long seconds)
             => DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime;
@@ -46,6 +46,8 @@ namespace WebApp.Services
             if (tick == null)
                 throw new InvalidOperationException("Unexpected payload: Data['BTC-EUR'] not found.");
 
+            var eurToCzk = await GetEurToCzkAsync(ct); // <— CNB rate (CZK per EUR)
+
             var dto = new BtcEurTickDto
             {
                 Market = tick.Value<string>("MARKET"),
@@ -56,10 +58,51 @@ namespace WebApp.Services
                 PriceLastUpdateUtc = FromUnixSecondsToUtc(tick.Value<long>("PRICE_LAST_UPDATE_TS")),
                 CurrentHourOpen = tick.Value<decimal?>("CURRENT_HOUR_OPEN") ?? 0m,
                 CurrentHourHigh = tick.Value<decimal?>("CURRENT_HOUR_HIGH") ?? 0m,
-                CurrentHourLow = tick.Value<decimal?>("CURRENT_HOUR_LOW") ?? 0m
+                CurrentHourLow = tick.Value<decimal?>("CURRENT_HOUR_LOW") ?? 0m,
+                PriceCzk = eurToCzk * tick.Value<decimal>("PRICE") // <— compute CZK
             };
 
             return dto;
         }
+        
+        private static decimal ParseCnbRate(string text, string code)
+        {
+            // CNB format:
+            // Line 1: "DD MMM YYYY #NNN"
+            // Line 2: header
+            // Next lines: Country|Currency|Amount|Code|Rate   (Rate uses comma decimal)
+            // Example EUR line: "...|1|EUR|24,70"
+            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 2; i < lines.Length; i++)
+            {
+                var parts = lines[i].Split('|');
+                if (parts.Length < 5) continue;
+                var lineCode = parts[3].Trim();
+                if (!string.Equals(lineCode, code, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var amountStr = parts[2].Trim();
+                var rateStr = parts[4].Trim().Replace(',', '.'); // make decimal invariant
+
+                if (!int.TryParse(amountStr, out var amount)) throw new InvalidOperationException("CNB: invalid Amount");
+                if (!decimal.TryParse(rateStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var rateCzk))
+                    throw new InvalidOperationException("CNB: invalid Rate");
+
+                if (amount <= 0) throw new InvalidOperationException("CNB: Amount must be > 0");
+                return rateCzk / amount; // CZK per 1 EUR
+            }
+
+            throw new InvalidOperationException("CNB: EUR line not found");
+        }
+
+        private async Task<decimal> GetEurToCzkAsync(CancellationToken ct)
+        {
+            using (var resp = await s_http.GetAsync(CnbDailyUrl, ct))
+            {
+                resp.EnsureSuccessStatusCode();
+                var text = await resp.Content.ReadAsStringAsync();
+                return ParseCnbRate(text, "EUR");
+            }
+        }
+
     }
 }
