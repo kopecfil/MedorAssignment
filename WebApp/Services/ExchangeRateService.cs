@@ -38,7 +38,7 @@ namespace WebApp.Services
             var raw = await FetchRawJsonAsync(ct);
             return raw;
         }
-        
+
         public async Task<BtcEurTickDto> GetLatestParsedAsync(CancellationToken ct)
         {
             string rawJson = await FetchRawJsonAsync(ct);

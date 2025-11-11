@@ -72,7 +72,44 @@ namespace WebApp
 
         protected void SaveChangesButton_Click(object sender, EventArgs e)
         {
-            StatusLabel.Text = "Ukládání změn zatím není implementováno.";
+            try
+            {
+                var idsAndNotes = new List<(int id, string note)>();
+                foreach (System.Web.UI.WebControls.GridViewRow row in SavedGrid.Rows)
+                {
+                    var id = (int)SavedGrid.DataKeys[row.RowIndex].Value;
+                    var noteBox = (System.Web.UI.WebControls.TextBox)row.FindControl("NoteBox");
+                    var note = (noteBox?.Text ?? string.Empty).Trim();
+
+                    if (string.IsNullOrEmpty(note))
+                    {
+                        StatusLabel.Text = $"Poznámka nesmí být prázdná (řádek ID {id}).";
+                        return; // fail fast; nothing saved
+                    }
+                    idsAndNotes.Add((id, note));
+                }
+
+                var nowUtc = DateTime.UtcNow;
+                using (var db = new WebApp.Data.ExchangeRatesDbContext())
+                {
+                    var ids = idsAndNotes.Select(x => x.id).ToArray();
+                    var map = idsAndNotes.ToDictionary(x => x.id, x => x.note);
+
+                    var entities = db.ExchangeRateEntries.Where(x => ids.Contains(x.ExchangeRateEntryId)).ToList();
+                    foreach (var entity in entities)
+                    {
+                        entity.UserNote = map[entity.ExchangeRateEntryId];
+                        entity.UpdatedAtUtc = nowUtc;
+                    }
+                    db.SaveChanges();
+                }
+
+                StatusLabel.Text = $"Změny uloženy ({idsAndNotes.Count}).";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Text = "Chyba při ukládání: " + ex.Message;
+            }
         }
 
         protected void DeleteSelectedButton_Click(object sender, EventArgs e)
