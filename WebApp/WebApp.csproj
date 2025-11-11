@@ -160,7 +160,7 @@
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="LiveData.aspx" />
-    <Content Include="Saved.aspx" />
+    <Content Include="SavedData.aspx" />
     <Content Include="Scripts\bootstrap.bundle.js" />
     <Content Include="Scripts\bootstrap.bundle.min.js" />
     <Content Include="Scripts\bootstrap.esm.js" />
@@ -264,12 +264,12 @@
       <DependentUpon>LiveData.aspx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Saved.aspx.cs">
+    <Compile Include="SavedData.aspx.cs">
       <SubType>ASPXCodeBehind</SubType>
-      <DependentUpon>Saved.aspx</DependentUpon>
+      <DependentUpon>SavedData.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Saved.aspx.designer.cs">
-      <DependentUpon>Saved.aspx</DependentUpon>
+    <Compile Include="SavedData.aspx.designer.cs">
+      <DependentUpon>SavedData.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\ExchangeRateService.cs" />
     <Compile Include="Site.Master.cs">

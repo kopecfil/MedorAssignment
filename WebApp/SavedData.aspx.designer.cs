@@ -11,7 +11,7 @@ namespace WebApp
 {
 
 
-    public partial class Saved
+    public partial class SavedData
     {
 
         /// <summary>

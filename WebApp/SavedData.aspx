@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" Async="true" AutoEventWireup="true" CodeBehind="Saved.aspx.cs" Inherits="WebApp.Saved" %>
+﻿<%@ Page Language="C#" Async="true" AutoEventWireup="true" CodeBehind="~/SavedData.aspx.cs" Inherits="WebApp.SavedData" %>
 <!DOCTYPE html>
 <html>
 <head runat="server">
@@ -17,7 +17,11 @@
 
     <div class="toolbar">
         <asp:Button ID="SaveChangesButton" runat="server" Text="Uložit změny" OnClick="SaveChangesButton_Click" />
-        <asp:Button ID="DeleteSelectedButton" runat="server" Text="Smazat vybrané záznamy" OnClick="DeleteSelectedButton_Click" />
+        <asp:Button ID="DeleteSelectedButton" runat="server"
+                    Text="Smazat vybrané záznamy"
+                    OnClientClick="return confirmDelete();"
+                    OnClick="DeleteSelectedButton_Click" />
+        <input type="hidden" id="confirm_value" name="confirm_value" />
         &nbsp;&nbsp;Počet řádků: <asp:Label ID="RowCount" runat="server" Text="0" />
         &nbsp;&nbsp;<asp:Label ID="StatusLabel" runat="server" />
     </div>
@@ -52,6 +56,17 @@
 
         </Columns>
     </asp:GridView>
+    <script type="text/javascript">
+      function confirmDelete() {
+        var confirmed = confirm("Opravdu chcete smazat vybrané záznamy?");
+        if (confirmed) document.getElementById("confirm_value").value = "Ano";
+        return confirmed;
+      }
+      function toggleSelectAll(source) {
+        var boxes = document.querySelectorAll('input[id$=SelectRow]');
+        for (var i = 0; i < boxes.length; i++) boxes[i].checked = source.checked;
+      }
+    </script>
 
 </form>
 </body>

@@ -7,7 +7,7 @@ using WebApp.Data;
 
 namespace WebApp
 {
-    public partial class Saved : Page
+    public partial class SavedData : Page
     {
         private sealed class RowVm
         {
@@ -114,7 +114,59 @@ namespace WebApp
 
         protected void DeleteSelectedButton_Click(object sender, EventArgs e)
         {
-            StatusLabel.Text = "Mazání zatím není implementováno.";
+            try
+            {
+                // ensure user confirmed
+                // this seems like a weird way to do confirmation, but im not an expert on FE
+                var confirm = Request.Form["confirm_value"];
+                if (!string.Equals(confirm, "Ano", StringComparison.OrdinalIgnoreCase))
+                {
+                    StatusLabel.Text = "Mazání zrušeno.";
+                    return;
+                }
+
+                // collect selected IDs
+                var ids = new List<int>();
+                foreach (System.Web.UI.WebControls.GridViewRow row in SavedGrid.Rows)
+                {
+                    var cb = (System.Web.UI.WebControls.CheckBox)row.FindControl("SelectRow");
+                    if (cb != null && cb.Checked)
+                    {
+                        var id = (int)SavedGrid.DataKeys[row.RowIndex].Value;
+                        ids.Add(id);
+                    }
+                }
+
+                if (ids.Count == 0)
+                {
+                    StatusLabel.Text = "Není vybrán žádný záznam.";
+                    return;
+                }
+
+                // delete in one go
+                using (var db = new WebApp.Data.ExchangeRatesDbContext())
+                {
+                    var toRemove = db.ExchangeRateEntries.Where(x => ids.Contains(x.ExchangeRateEntryId)).ToList();
+                    if (toRemove.Count == 0)
+                    {
+                        StatusLabel.Text = "Vybrané záznamy nebyly nalezeny (možná již smazány).";
+                    }
+                    else
+                    {
+                        db.ExchangeRateEntries.RemoveRange(toRemove);
+                        db.SaveChanges();
+                        StatusLabel.Text = $"Smazáno {toRemove.Count} záznamů.";
+                    }
+                }
+
+                // refresh grid + count
+                LoadAndBind();
+                RowCount.Text = SavedGrid.Rows.Count.ToString();
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Text = "Chyba při mazání: " + ex.Message;
+            }
         }
     }
 }
