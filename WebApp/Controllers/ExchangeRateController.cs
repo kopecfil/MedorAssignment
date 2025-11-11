@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
 using WebApp.Dtos;
 using WebApp.Services;
 
@@ -26,6 +27,7 @@ namespace WebApp.Controllers
 			}
 			catch(Exception ex)
 			{
+				Log.Error(ex, "API /coindesk/btceur failed");
 				return ResponseMessage(Request.CreateErrorResponse(HttpStatusCode.InternalServerError, ex));
 			}
 		}

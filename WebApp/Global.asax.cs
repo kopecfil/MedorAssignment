@@ -7,6 +7,7 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using System.Web.Security;
 using System.Web.SessionState;
+using Serilog;
 
 namespace WebApp
 {
@@ -18,6 +19,20 @@ namespace WebApp
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
             GlobalConfiguration.Configure(WebApiConfig.Register);
+            // Serilog: daily rolling file under ~/logs
+            var logPath = Server.MapPath("~/logs/app-.log");
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+                .CreateLogger();
+            
+            Log.Information("App start");
+        }
+
+        protected void Application_End()
+        {
+            Log.Information("App stop");
+            Log.CloseAndFlush();
         }
     }
 }

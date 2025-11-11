@@ -15,8 +15,9 @@
     <h2>Live data (BTC-EUR)</h2>
   <div class="controls">
     <button type="button" onclick="saveAll()">Uložit data</button>
+    <button type="button" onclick="goToSaved()">Zobrazit uložená data</button>
     <span style="margin-left:10px">Řádků: <span id="count">0</span></span>
-    <span style="margin-left:10px">Stav: <span id="status">idle</span></span>
+    <span style="margin-left:10px">Status: <span id="status">idle</span></span>
   </div>
 
   <table>
@@ -183,8 +184,13 @@
       console.error(e);
     }
   }
+  
+  function goToSaved() {
+    window.location.href = window.location.origin + "/SavedData";
+  }
 
   window.addEventListener('DOMContentLoaded', startPolling);
+  
 </script>
 
 </html>

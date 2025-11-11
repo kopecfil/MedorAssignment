@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using WebApp.Data;
 using WebApp.Dtos;
 
@@ -12,8 +13,7 @@ namespace WebApp.Services
 {
     public sealed class ExchangeRateService
     {
-        // todo cleanup rename
-        private static readonly HttpClient s_http = new HttpClient
+        private static readonly HttpClient HttpClient = new HttpClient
         {
             Timeout = TimeSpan.FromSeconds(10)
         };
@@ -26,7 +26,7 @@ namespace WebApp.Services
 
         private async Task<string> FetchRawJsonAsync(CancellationToken ct)
         {
-            using (var response = await s_http.GetAsync(BtcEurUrl, ct))
+            using (var response = await HttpClient.GetAsync(BtcEurUrl, ct))
             {
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadAsStringAsync();
@@ -41,40 +41,49 @@ namespace WebApp.Services
 
         public async Task<BtcEurTickDto> GetLatestParsedAsync(CancellationToken ct)
         {
-            string rawJson = await FetchRawJsonAsync(ct);
-
-            var root = JObject.Parse(rawJson);
-            var tick = (JObject)root["Data"]?["BTC-EUR"];
-
-            if (tick == null)
-                throw new InvalidOperationException("Unexpected payload: Data['BTC-EUR'] not found.");
-
-            var eurToCzk = await GetEurToCzkAsync(ct); // <— CNB rate (CZK per EUR)
-
-            var dto = new BtcEurTickDto
+            try
             {
-                Market = tick.Value<string>("MARKET"),
-                Instrument = tick.Value<string>("INSTRUMENT"),
-                Price = tick.Value<decimal>("PRICE"),
-                BestBid = tick.Value<decimal?>("BEST_BID") ?? 0m,
-                BestAsk = tick.Value<decimal?>("BEST_ASK") ?? 0m,
-                PriceLastUpdateUtc = FromUnixSecondsToUtc(tick.Value<long>("PRICE_LAST_UPDATE_TS")),
-                CurrentHourOpen = tick.Value<decimal?>("CURRENT_HOUR_OPEN") ?? 0m,
-                CurrentHourHigh = tick.Value<decimal?>("CURRENT_HOUR_HIGH") ?? 0m,
-                CurrentHourLow = tick.Value<decimal?>("CURRENT_HOUR_LOW") ?? 0m,
-                PriceCzk = eurToCzk * tick.Value<decimal>("PRICE")
-            };
-            // todo this seems unnecessarily ugly tho it doesn't actually matter, this code is as simple as it can get
-            dto.BestBidCzk = eurToCzk * dto.BestBid;
-            dto.BestAskCzk = eurToCzk * dto.BestAsk;
-            dto.CurrentHourOpenCzk = eurToCzk * dto.CurrentHourOpen;
-            dto.CurrentHourHighCzk = eurToCzk * dto.CurrentHourHigh;
-            dto.CurrentHourLowCzk = eurToCzk * dto.CurrentHourLow;
+                string rawJson = await FetchRawJsonAsync(ct);
 
+                var root = JObject.Parse(rawJson);
+                var tick = (JObject)root["Data"]?["BTC-EUR"];
 
-            return dto;
+                if(tick == null)
+                    throw new InvalidOperationException("Unexpected payload: Data['BTC-EUR'] not found.");
+
+                var eurToCzk = await GetEurToCzkAsync(ct);// <— CNB rate (CZK per EUR)
+
+                var dto = new BtcEurTickDto
+                {
+                    Market = tick.Value<string>("MARKET"),
+                    Instrument = tick.Value<string>("INSTRUMENT"),
+                    Price = tick.Value<decimal>("PRICE"),
+                    BestBid = tick.Value<decimal?>("BEST_BID") ?? 0m,
+                    BestAsk = tick.Value<decimal?>("BEST_ASK") ?? 0m,
+                    PriceLastUpdateUtc = FromUnixSecondsToUtc(tick.Value<long>("PRICE_LAST_UPDATE_TS")),
+                    CurrentHourOpen = tick.Value<decimal?>("CURRENT_HOUR_OPEN") ?? 0m,
+                    CurrentHourHigh = tick.Value<decimal?>("CURRENT_HOUR_HIGH") ?? 0m,
+                    CurrentHourLow = tick.Value<decimal?>("CURRENT_HOUR_LOW") ?? 0m,
+                    PriceCzk = eurToCzk * tick.Value<decimal>("PRICE")
+                };
+                // todo this seems unnecessarily ugly tho it doesn't actually matter, this code is as simple as it can get
+                dto.BestBidCzk = eurToCzk * dto.BestBid;
+                dto.BestAskCzk = eurToCzk * dto.BestAsk;
+                dto.CurrentHourOpenCzk = eurToCzk * dto.CurrentHourOpen;
+                dto.CurrentHourHighCzk = eurToCzk * dto.CurrentHourHigh;
+                dto.CurrentHourLowCzk = eurToCzk * dto.CurrentHourLow;
+
+                Log.Information("Parsed BTC-EUR tick priceEUR={Price} priceCZK={PriceCzk}", dto.Price, dto.PriceCzk);
+
+                return dto;
+            }
+            catch(Exception e)
+            {
+                Log.Error(e, "Failed to fetch or parse BTC-EUR tick");
+                throw;
+            }
         }
-        
+
         private static decimal ParseCnbRate(string text, string code)
         {
             // CNB format:
@@ -106,7 +115,7 @@ namespace WebApp.Services
 
         private async Task<decimal> GetEurToCzkAsync(CancellationToken ct)
         {
-            using (var resp = await s_http.GetAsync(CnbDailyUrl, ct))
+            using (var resp = await HttpClient.GetAsync(CnbDailyUrl, ct))
             {
                 resp.EnsureSuccessStatusCode();
                 var text = await resp.Content.ReadAsStringAsync();
